@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tya's Sea Kingdom Animation</title>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+body{
+margin:0;
+height:100vh;
+overflow:hidden;
+font-family:'Poppins',sans-serif;
+color:white;
+}
+
+/* BACKGROUND */
+.ocean{
+position:fixed;
+width:100%;
+height:100%;
+background:linear-gradient(to bottom,#003566,#001d3d,#000814);
+overflow:hidden;
+z-index:-2;
+}
+
+.wave{
+position:absolute;
+width:200%;
+height:200px;
+background:rgba(0,180,216,0.4);
+bottom:0;
+border-radius:50%;
+animation:waveMove 8s linear infinite;
+}
+.wave:nth-child(2){bottom:60px;opacity:0.5;animation-duration:12s;}
+@keyframes waveMove{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* Creature */
+.sea-creature{position:absolute;animation:swim linear infinite;}
+@keyframes swim{0%{transform:translateX(-150px);}100%{transform:translateX(120vw);}}
+
+/* Mermaid */
+.mermaid,.prince{
+position:absolute;
+font-size:70px;
+animation:float 5s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-20px);}}
+
+/* Bubble */
+.bubble{
+position:absolute;
+bottom:-20px;
+border-radius:50%;
+background:rgba(255,255,255,0.5);
+animation:rise linear infinite;
+}
+@keyframes rise{0%{transform:translateY(0);}100%{transform:translateY(-120vh);}}
+
+/* Boss */
+.boss{
+position:fixed;
+top:20%;
+right:10%;
+font-size:120px;
+animation:float 4s infinite;
+display:none;
+}
+.hp-bar{
+position:fixed;
+top:10px;
+right:10px;
+width:200px;
+height:20px;
+background:#333;
+border-radius:10px;
+overflow:hidden;
+display:none;
+}
+.hp-fill{
+height:100%;
+background:red;
+width:100%;
+transition:0.5s;
+}
+
+/* UI */
+.center-wrapper{display:flex;justify-content:center;align-items:center;height:100vh;}
+.card{
+background:rgba(0,20,50,0.9);
+padding:25px;
+border-radius:20px;
+width:480px;
+text-align:center;
+box-shadow:0 0 40px #00c6ff55;
+}
+
+input{width:90%;padding:10px;margin:8px 0;border-radius:10px;border:none;}
+button{padding:10px 20px;border:none;border-radius:15px;background:#00b4d8;color:white;cursor:pointer;margin-top:10px;}
+
+.option{background:#0077b6;margin:10px;padding:12px;border-radius:15px;cursor:pointer;transition:0.3s;}
+.option:hover{background:#0096c7;}
+.correct{background:#00ff88!important;}
+.wrong{background:#ff1744!important;}
+
+.topbar{position:absolute;top:0;left:0;width:100%;display:flex;justify-content:space-between;padding:10px;font-weight:bold;}
+
+.leaderboard{
+margin-top:15px;
+background:rgba(0,0,0,0.4);
+padding:10px;
+border-radius:10px;
+text-align:left;
+font-size:14px;
+}
+
+.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<audio autoplay loop>
+<source src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9b8e6e.mp3" type="audio/mpeg">
+</audio>
+
+<div class="ocean">
+<div class="wave"></div>
+<div class="wave"></div>
+</div>
+
+<div class="boss" id="boss">🐉</div>
+<div class="hp-bar" id="hpBar"><div class="hp-fill" id="hpFill"></div></div>
+
+<div class="center-wrapper">
+
+<div class="card" id="loginBox">
+<h2>🌊 Halo Selamat Datang Semuanya di Quizz Semoga Lancar Mengerjakannya</h2>
+<input type="text" id="username" placeholder="Username">
+<input type="password" id="password" placeholder="Password">
+<button onclick="login()">MASUK</button>
+</div>
+
+<div id="gameArea" class="hidden">
+<div class="topbar">
+<div>Pemain: <span id="playerName"></span> | Skor: <span id="score">0</span></div>
+<div id="titlePlayer"></div>
+</div>
+
+<div class="card">
+<h2 id="question"></h2>
+<div id="options"></div>
+<button onclick="nextQuestion()" id="nextBtn" style="display:none">Next</button>
+
+<div class="leaderboard">
+<b>🏆 Leaderboard</b>
+<ol id="leaderboardList"></ol>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+
+/* Background elements */
+const animals=["🐠","🐟","🦈","🐋","🐬","🦑","🐙","🦀","🐢","🪼"];
+for(let i=0;i<30;i++){
+let c=document.createElement("div");
+c.className="sea-creature";
+c.innerHTML=animals[Math.floor(Math.random()*animals.length)];
+c.style.top=Math.random()*80+"%";
+c.style.fontSize=(30+Math.random()*40)+"px";
+c.style.animationDuration=(15+Math.random()*20)+"s";
+document.querySelector(".ocean").appendChild(c);
+}
+
+for(let i=0;i<6;i++){
+let m=document.createElement("div");
+m.className="mermaid";
+m.innerHTML="🧜‍♀️";
+m.style.left=Math.random()*90+"%";
+m.style.top=(10+Math.random()*60)+"%";
+document.querySelector(".ocean").appendChild(m);
+}
+
+for(let i=0;i<5;i++){
+let p=document.createElement("div");
+p.className="prince";
+p.innerHTML="🧜‍♂️";
+p.style.left=Math.random()*90+"%";
+p.style.top=(10+Math.random()*60)+"%";
+document.querySelector(".ocean").appendChild(p);
+}
+
+for(let i=0;i<100;i++){
+let b=document.createElement("div");
+b.className="bubble";
+let size=5+Math.random()*15;
+b.style.width=size+"px";
+b.style.height=size+"px";
+b.style.left=Math.random()*100+"%";
+b.style.animationDuration=(5+Math.random()*10)+"s";
+b.style.opacity=Math.random();
+document.querySelector(".ocean").appendChild(b);
+}
+
+/* Game */
+let player="",score=0,current=0,bossHP=100;
+const quiz=[
+{
+q:"Tanah terbentuk melalui proses pelapukan batuan yang berlangsung sangat lama. Faktor utama yang mempercepat proses pelapukan tersebut adalah ...",
+o:["Intensitas cahaya, curah hujan, dan aktivitas manusia","Iklim, sinar matahari, dan curah hujan","Jumlah hewan di permukaan tanah","Warna dan tekstur tanah"],
+a:1
+},
+{
+q:"Pelapukan batuan yang dibantu oleh mikroorganisme tanah dan tumbuhan termasuk pelapukan jenis ...",
+o:["Fisika","Kimia","Biologis","Mekanik"],
+a:2
+},
+{
+q:"Lapisan tanah yang paling banyak mengandung zat organik dan menjadi tempat utama tumbuhan memperoleh nutrisi adalah ...",
+o:["Horizon C","Horizon B","Horizon A","Lapisan batuan induk"],
+a:2
+},
+{
+q:"Horizon C berperan penting dalam pembentukan tanah karena ...",
+o:["Mengandung humus paling banyak","Menjadi tempat hidup organisme tanah","Menjadi sumber utama bahan pembentuk tanah bagian atas","Mengandung air paling banyak"],
+a:2
+},
+{
+q:"Tanah membutuhkan waktu ribuan tahun untuk terbentuk setebal beberapa sentimeter. Hal ini menunjukkan bahwa tanah termasuk sumber daya alam yang ...",
+o:["Mudah diperbarui dalam waktu singkat","Tidak memerlukan perlindungan","Pembentukannya sangat lambat","Tidak dipengaruhi faktor lingkungan"],
+a:2
+},
+{
+q:"Komponen penyusun tanah yang berasal dari sisa makhluk hidup yang telah mengalami penguraian disebut ...",
+o:["Mineral","Humus","Udara tanah","Batuan beku"],
+a:1
+},
+{
+q:"Rongga udara dalam tanah berfungsi untuk ...",
+o:["Menghambat pertumbuhan akar","Menyimpan pupuk kimia","Menyediakan ruang bagi air dan udara untuk akar tumbuhan","Mengurangi kesuburan tanah"],
+a:2
+},
+{
+q:"Seorang siswa mengamati bahwa tanah di daerah pegunungan lebih cepat mengalami pelapukan dibandingkan daerah kering. Analisis yang tepat adalah ...",
+o:["Daerah pegunungan memiliki warna tanah lebih gelap","Curah hujan dan kelembapan mempercepat proses pelapukan","Pegunungan tidak memiliki batuan induk","Tanah kering mengandung lebih banyak humus"],
+a:1
+},
+{
+q:"Jika lapisan Horizon A hilang akibat erosi, maka dampak langsung yang terjadi adalah ...",
+o:["Tanah menjadi lebih subur","Hilangnya lapisan yang kaya zat organik","Bertambahnya kandungan mineral","Bertambahnya organisme tanah"],
+a:1
+},
+{
+q:"Tanah tersusun atas beberapa komponen seperti batuan, udara, air, humus, dan mineral. Jika tanah kehilangan sebagian besar rongga udaranya, maka kemungkinan yang terjadi adalah ...",
+o:["Akar tumbuhan lebih mudah bernapas","Tanah menjadi lebih gembur","Pertumbuhan tanaman terganggu","Kandungan humus meningkat"],
+a:2
+}
+];
+
+function login(){
+if(username.value.trim()===""||password.value.trim()===""){
+Swal.fire({icon:"warning",title:"Login Gagal"});
+return;
+}
+player=username.value;
+playerName.innerText=player;
+loginBox.classList.add("hidden");
+gameArea.classList.remove("hidden");
+loadQuestion();
+updateLeaderboard();
+}
+
+function loadQuestion(){
+let q=quiz[current];
+question.innerText=q.q;
+let html="";
+q.o.forEach((opt,i)=>{
+html+=`<div class="option" onclick="check(${i})">${opt}</div>`;
+});
+options.innerHTML=html;
+}
+
+function check(i){
+let q=quiz[current];
+let ops=document.querySelectorAll(".option");
+ops[q.a].classList.add("correct");
+
+if(i===q.a){
+score+=10;
+Swal.fire({icon:"success",title:"🎯 BENAR!"});
+if(score>=40){activateBoss();}
+}else{
+ops[i].classList.add("wrong");
+Swal.fire({icon:"error",title:"💀 SALAH!"});
+}
+
+document.getElementById("score").innerText=score;
+saveScore();
+updateLeaderboard();
+nextBtn.style.display="block";
+}
+
+function nextQuestion(){
+current++;
+if(current>=quiz.length){current=0;}
+nextBtn.style.display="none";
+loadQuestion();
+}
+
+/* Boss */
+function activateBoss(){
+document.getElementById("boss").style.display="block";
+document.getElementById("hpBar").style.display="block";
+bossHP-=20;
+document.getElementById("hpFill").style.width=bossHP+"%";
+if(bossHP<=0){
+Swal.fire({icon:"success",title:"🐉 BOSS DIKALAHKAN!"});
+document.getElementById("boss").innerHTML="💥";
+}
+}
+
+/* Leaderboard */
+function saveScore(){
+let data=JSON.parse(localStorage.getItem("oceanScore"))||[];
+data.push({name:player,score:score});
+data.sort((a,b)=>b.score-a.score);
+data=data.slice(0,5);
+localStorage.setItem("oceanScore",JSON.stringify(data));
+}
+
+function updateLeaderboard(){
+let data=JSON.parse(localStorage.getItem("oceanScore"))||[];
+let html="";
+data.forEach((d,i)=>{
+let crown=i===0?" 👑 Ratu/Raja Laut":"";
+html+=`<li>${d.name} - ${d.score}${crown}</li>`;
+});
+document.getElementById("leaderboardList").innerHTML=html;
+}
+
+</script>
+
+</body>
+</html>
